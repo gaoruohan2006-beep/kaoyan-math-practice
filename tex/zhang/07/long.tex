@@ -1,0 +1,60 @@
+% 原试卷 PDF 第54～58页。
+\begin{question}[index=17,points=10]
+设 $f(x)$ 在 $x=0$ 的某邻域内连续，在 $x=0$ 处可导，且 $f(0)=0$，
+\[
+g(x)=\begin{cases}
+\dfrac1{x^2}\displaystyle\int_0^x tf(t)\dd t,&x\ne0,\\
+0,&x=0,
+\end{cases}
+\]
+证明：$g(x)$ 在 $x=0$ 处可导且 $g'(x)$ 在 $x=0$ 处连续。
+\end{question}
+\QuestionBreak\WorkSpace
+
+\begin{question}[index=18,points=12]
+设函数 $f(x)$ 满足 $f(x)=-f(x-1)$，$x\in[0,1]$，且 $f(x)$ 在 $[-1,1]$ 上可导．
+\begin{enumerate}[label=（\arabic*）,leftmargin=2.5em,labelsep=.4em,itemsep=3pt,topsep=3pt]
+\item 证明 $\displaystyle\int_{-1}^1 f(x)\dd x=0$；
+\item 设 $\displaystyle F(x)=(1-x^2)\int_0^1 f(x)\dd x+\int_1^x f(t)\dd t$，证明存在 $\xi\in(-1,1)$，使得 $F''(\xi)=0$．
+\end{enumerate}
+\end{question}
+\QuestionBreak\WorkSpace\WorkPageBreak
+
+\begin{question}[index=19,points=12]
+设 $z(x,y)$ 在 $xOy$ 平面上的任一有界区域 $D$ 内存在连续偏导数，且
+\[
+\iint_D\left[\left(\frac{\partial z}{\partial x}\right)^2+x^2z^2\right]\dd x\dd y
+=2\iint_D xz\frac{\partial z}{\partial x}\dd x\dd y,\qquad z(0,y)=y^2,
+\]
+求 $z(x,y)$ 的表达式。
+\end{question}
+\QuestionBreak\WorkSpace
+
+\begin{question}[index=20,points=12]
+设函数 $y=y(x)$ 满足 $(1-x)y'+2y=0$，$y(0)=1$，$\displaystyle a_n(x)=\int_0^x y(t)\sin^n t\dd t$，$n=1,2,\ldots$．
+\begin{enumerate}[label=（\arabic*）,leftmargin=2.5em,labelsep=.4em,itemsep=3pt,topsep=3pt]
+\item 求 $y(x)$ 的表达式；
+\item 证明 $\displaystyle\sum_{n=1}^{\infty}a_n(1)$ 收敛．
+\end{enumerate}
+\end{question}
+\QuestionBreak\WorkSpace\WorkPageBreak
+
+\begin{question}[index=21,points=12]
+设二次型 $f(x_1,x_2)$ 与 $g(x_1,x_2)$ 的矩阵分别为
+$\symbfit A=\begin{pmatrix}1&-2\\-2&4\end{pmatrix}$，
+$\symbfit B=\begin{pmatrix}1&-1\\-1&2\end{pmatrix}$．
+\begin{enumerate}[label=（\arabic*）,leftmargin=2.5em,labelsep=.4em,itemsep=3pt,topsep=3pt]
+\item 是否存在可逆矩阵 $\symbfit D$，使得 $\symbfit B=\symbfit D^{\mathrm T}\symbfit D$？若存在，求出矩阵 $\symbfit D$，若不存在，说明理由．
+\item 求 $\displaystyle\max_{\symbfit x\ne\symbf{0}}\frac{f(\symbfit x)}{g(\symbfit x)}$，其中 $\symbfit x=\begin{pmatrix}x_1\\x_2\end{pmatrix}$．
+\end{enumerate}
+\end{question}
+\QuestionBreak\WorkSpace
+
+\begin{question}[index=22,points=12]
+某种服务器无故障运行时间 $X$ 服从参数为 $\dfrac1\theta$ 的指数分布，为估计未知参数 $\theta$，现投入 $n$ 个同型号服务器同时运行，并记录故障发生时间．试验进行到 $k$ 个服务器发生故障时停止，$1\leq k\leq n$．用 $T_i\ (i=1,2,\ldots,k)$ 表示各个服务器发生故障的时间，现观测到 $k$ 个服务器发生故障的时间分别为 $t_1,t_2,\ldots,t_k$，且 $t_1\leq t_2\leq\cdots\leq t_k$．
+\begin{enumerate}[label=（\arabic*）,leftmargin=2.5em,labelsep=.4em,itemsep=3pt,topsep=3pt]
+\item 求 $\theta$ 的最大似然估计值 $\hat\theta$；
+\item 当 $k=n$ 时，$\theta$ 的最大似然估计量为 $\hat\theta_n$，则 $\hat\theta_n$ 是否为 $\theta$ 的无偏估计？
+\end{enumerate}
+\end{question}
+\WorkSpace

@@ -1,14 +1,33 @@
 "use strict";
 
-const zhang = {
-  id: "zhang-2027-08-01",
-  title: "张宇八套卷",
-  keys: "CBADADCCAB",
-};
+const series = [
+  {
+    id: "zhang", title: "张宇八套卷",
+    keys: ["CBADADCCAB", "ACDBDCBABD", "BBCBAADDCC", "DACBDDABAC",
+      "CCDABACBBD", "BCADCCBDAB", "DCAABCBACD", "BACADACBDC"],
+  },
+  {
+    id: "lilin", title: "李林六套卷",
+    keys: ["ACDCDBADAB", "CCBBBDDABC", "CCACDBCDDD", "CBDCBCDDDB",
+      ["B", "D", "D", "B", "C", "C", "D", "AB", "C", "C"], "CCCDD-DBDA"],
+  },
+].map(({ id, title, keys }) => ({
+  title,
+  papers: keys.map((answers, i) => ({
+    id: `${id}-2027-${String(keys.length).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
+    title, year: 2027, volume: i + 1, keys: [...answers],
+  })),
+}));
+const practicePapers = series.flatMap(item => item.papers);
+const defaultPaper = practicePapers[0];
 const xiehou = {
   id: "xiehou-2027-01",
   title: "邂逅遗憾模拟卷",
+  year: 2027,
+  volume: 1,
 };
+const allPapers = [...practicePapers, xiehou];
+const papersById = new Map(allPapers.map(paper => [paper.id, paper]));
 const groups = [
   { id: "choice", name: "选择题", first: 1, last: 10 },
   { id: "fill", name: "填空题", first: 11, last: 16 },
@@ -26,10 +45,10 @@ const modes = {
   paper: { name: "整卷", route: "papers/review/1" },
 };
 const routes = {
-  "practice/choice": { paper: zhang, groups: [groups[0]], mode: "choice" },
-  "practice/fill": { paper: zhang, groups: [groups[1]], mode: "fill", file: "fill" },
-  "long/review": { paper: zhang, groups: [groups[2]], mode: "long", file: "long" },
-  "papers/review": { paper: xiehou, groups, mode: "paper", file: "exam" },
+  "practice/choice": { groups: [groups[0]], mode: "choice" },
+  "practice/fill": { groups: [groups[1]], mode: "fill", file: "fill" },
+  "long/review": { groups: [groups[2]], mode: "long", file: "long" },
+  "papers/review": { groups, mode: "paper", file: "exam" },
 };
 
 const storageKey = "mock-paper-studio.v1";
@@ -40,14 +59,17 @@ const toast = document.querySelector("#toast");
 const starCount = document.querySelector("#star-count");
 let storageUnavailable = false;
 let state = readState();
-let selectedAnswer = "";
-let retrying = false;
 let toastTimer;
 
 function readState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
-    return { questions: saved?.questions || {}, active: saved?.active || null, history: saved?.history || [] };
+    const active = saved?.active || null;
+    if (active?.mode === "choice" && !active.draft) {
+      active.draft = Object.fromEntries(active.answers.map(({ number, answer }) => [number, answer]));
+      active.answers = [];
+    }
+    return { questions: saved?.questions || {}, active, history: saved?.history || [] };
   } catch {
     return { questions: {}, active: null, history: [] };
   }
@@ -83,7 +105,7 @@ function action(label, id, glyph = "", variant = "", data = "") {
 
 function pdf(paper, file, label, download = false, variant = "") {
   const names = { exam: "整卷", fill: "填空题", long: "解答题", solutions: "原版解析" };
-  const filename = `2027-${paper.title}-第1套-${names[file]}.pdf`;
+  const filename = `${paper.year}-${paper.title}-第${paper.volume}套-${names[file]}.pdf`;
   const attributes = download ? `download="${filename}"` : 'target="_blank" rel="noopener"';
   return `<a class="button ${variant}" href="assets/${paper.id}/${file}.pdf" ${attributes}>${icon(download ? "download" : "print")}${label}</a>`;
 }
@@ -100,15 +122,50 @@ function questionKey(paper, number) {
   return `${paper.id}:${number}`;
 }
 
-function info(paper, number) {
-  const marks = state.questions[questionKey(paper, number)] || {};
-  if (paper !== zhang || number > 10) return marks;
-  const pending = state.active?.answers.findLast(entry => entry.number === number);
-  return { ...marks, answer: pending?.answer ?? latestSavedAnswer(number) };
+function paperLabel(paper) {
+  return `${paper.year} · ${paper.title} · 第 ${paper.volume} 套`;
 }
 
-function latestSavedAnswer(number) {
+function paperForMode(mode) {
+  return mode === "paper" ? xiehou : defaultPaper;
+}
+
+function runPaper(run) {
+  return papersById.get(run?.paperId) || paperForMode(run?.mode);
+}
+
+function activeChoices(paper) {
+  const run = state.active;
+  return run?.mode === "choice" && runPaper(run) === paper ? run : null;
+}
+
+function lessonHref(path, paper) {
+  return "#" + path + (paper === defaultPaper || paper === xiehou ? "" : "/" + paper.id);
+}
+
+function lessonAt(path) {
+  const [section, view, rawNumber, id, extra] = path.split("/");
+  const route = section + "/" + view;
+  if (!Object.hasOwn(routes, route) || extra !== undefined) return null;
+  const lesson = routes[route];
+  const paper = id ? papersById.get(id) : paperForMode(lesson.mode);
+  const number = Number(rawNumber);
+  if (!paper || (lesson.mode === "paper") !== (paper === xiehou) ||
+      !Number.isInteger(number) || !lesson.groups.some(group => number >= group.first && number <= group.last)) return null;
+  return { ...lesson, route, paper, number };
+}
+
+function info(paper, number) {
+  const marks = state.questions[questionKey(paper, number)] || {};
+  if (!paper.keys || number > 10 || paper.keys[number - 1] === "-") return marks;
+  const run = activeChoices(paper);
+  if (run) return { ...marks, answer: run.answers.find(entry => entry.number === number)?.answer };
+  return { ...marks, answer: latestSavedAnswer(paper, number) };
+}
+
+function latestSavedAnswer(paper, number) {
   for (const run of state.history) {
+    if (run.mode !== "choice" || runPaper(run) !== paper) continue;
     const attempt = run.answers.findLast(entry => entry.number === number);
     if (attempt) return attempt.answer;
   }
@@ -119,11 +176,15 @@ function numberList(group) {
   return Array.from({ length: group.last - group.first + 1 }, (_, offset) => group.first + offset);
 }
 
+function scorableQuestions(paper) {
+  return numberList(groups[0]).filter(number => paper.keys[number - 1] !== "-");
+}
+
 function starredItems() {
-  return groups.flatMap(group => [zhang, xiehou].flatMap(paper => numberList(group).flatMap(number => {
-    const entry = info(paper, number);
+  return groups.flatMap(group => allPapers.flatMap(paper => numberList(group).flatMap(number => {
+    const entry = state.questions[questionKey(paper, number)] || {};
     if (!entry.star && !entry.wrong) return [];
-    return [{ paper, number, type: group.id, entry, source: `2027 · ${paper.title} · 第1套`, image: imagePath(paper, number) }];
+    return [{ paper, number, type: group.id, entry, source: paperLabel(paper), image: imagePath(paper, number) }];
   })));
 }
 
@@ -158,29 +219,31 @@ function home() {
   </section>`;
 }
 
-function catalogRow(paper, type, detail, controls) {
-  return `<article class="catalog-row"><span class="volume-index" aria-hidden="true">01</span><div>
-    <h3>${type}</h3><p><span class="tag year">2027</span>${type === paper.title ? "" : paper.title + " · "}第 1 套 · ${detail}</p>
-  </div><div class="row-actions">${controls}</div></article>`;
+function catalogRow(paper, controls) {
+  return `<article class="catalog-row"><span class="volume-index" aria-hidden="true">${String(paper.volume).padStart(2, "0")}</span>
+    <h3>第 ${paper.volume} 套</h3><div class="row-actions">${controls}</div></article>`;
 }
 
 function catalog(section) {
-  let rows;
-  if (section.id === "practice") {
-    rows = catalogRow(zhang, "选择题", "第 1–10 题", link("在线刷题", "#practice/choice/1", "arrow", "primary")) +
-      catalogRow(zhang, "填空题", "第 11–16 题", pdf(zhang, "fill", "打开打印版") + link("题号与计时", "#practice/fill/11", "grid"));
-  } else if (section.id === "long") {
-    rows = catalogRow(zhang, "解答题", "第 17–22 题", pdf(zhang, "long", "打开打印版", false, "primary") + link("题号与计时", "#long/review/17", "grid"));
-  } else {
-    rows = catalogRow(xiehou, xiehou.title, "22 题", pdf(xiehou, "exam", "打开整卷 PDF", false, "primary") + link("题号与计时", "#papers/review/1", "grid"));
-  }
-  const paper = section.id === "papers" ? xiehou : zhang;
+  const collections = section.id === "papers" ? [{ title: xiehou.title, papers: [xiehou] }] : series;
+  const solutions = paper => pdf(paper, "solutions", "下载原版解析", true);
+  const controls = paper => {
+    if (section.id === "practice") {
+      return link("选择题在线刷", lessonHref(modes.choice.route, paper), "arrow", "primary") +
+        pdf(paper, "fill", "填空题 PDF") + link("填空题号", lessonHref(modes.fill.route, paper), "grid") + solutions(paper);
+    }
+    if (section.id === "long") {
+      return pdf(paper, "long", "打开打印版", false, "primary") +
+        link("题号与计时", lessonHref(modes.long.route, paper), "grid") + solutions(paper);
+    }
+    return pdf(paper, "exam", "打开整卷 PDF", false, "primary") +
+      link("题号与计时", lessonHref(modes.paper.route, paper), "grid") + solutions(paper);
+  };
   return `${title(section.name, { art: section.art })}
-    <section class="catalog">
-      <div class="panel-head"><h2>2027 年 · 数学一</h2></div>
-      ${rows}
-      <div class="actions catalog-solutions">${pdf(paper, "solutions", "下载原版解析", true)}</div>
-    </section>`;
+    <div class="catalog">${collections.map(collection => `<section class="catalog-series">
+      <div class="panel-head"><h2>${collection.papers[0].year} · ${collection.title}</h2></div>
+      ${collection.papers.map(paper => catalogRow(paper, controls(paper))).join("")}
+    </section>`).join("")}</div>`;
 }
 
 function starControl(paper, number) {
@@ -193,40 +256,60 @@ function starControl(paper, number) {
 }
 
 function questionRail(lesson, route, current) {
+  const paper = lesson.paper;
+  const run = lesson.mode === "choice" ? activeChoices(paper) : null;
+  const draft = run && !run.graded ? run.draft : null;
+  const valid = lesson.mode === "choice" ? scorableQuestions(paper) : [];
+  const answered = valid.filter(number => draft ? draft[number] : info(paper, number).answer).length;
   return `<aside class="rail" aria-label="题号导航">${lesson.groups.map(group => `<section>
     <h3>${group.name}</h3>
-    ${lesson.mode === "choice" ? `<p>已做 ${numberList(group).filter(number => info(zhang, number).answer).length} / 10</p>` : ""}
+    ${lesson.mode === "choice" ? `<p>已答 ${answered} / ${valid.length}</p>` : ""}
     <div class="tiles">${numberList(group).map(number => {
-      const entry = info(lesson.paper, number);
-      const status = entry.answer ? entry.answer === zhang.keys[number - 1] ? "right" : "wrong" : "";
+      const entry = info(paper, number);
+      const key = paper.keys?.[number - 1];
+      const status = key === "-" ? "invalid" : draft?.[number] ? "answered" : entry.answer ? key.includes(entry.answer) ? "right" : "wrong" : "";
       const mark = entry.star || entry.wrong;
-      const label = `第 ${number} 题${status === "right" ? "，答对" : status === "wrong" ? "，答错" : ""}${mark ? "，已标星" : ""}`;
-      return `<a class="tile ${status}" href="#${route}/${number}" aria-label="${label}"${current === number ? ' aria-current="true"' : ""}>${number}${mark ? '<span class="tile-star" aria-hidden="true">★</span>' : ""}</a>`;
+      const labels = { right: "，答对", wrong: "，答错", answered: "，已答", invalid: "，错题，不计分" };
+      const label = `第 ${number} 题${labels[status] || ""}${mark ? "，已标星" : ""}`;
+      return `<a class="tile ${status}" href="${lessonHref(route + "/" + number, paper)}" aria-label="${label}"${current === number ? ' aria-current="true"' : ""}>${number}${mark ? '<span class="tile-star" aria-hidden="true">★</span>' : ""}</a>`;
     }).join("")}</div>
+    ${draft ? action("交卷出分", "grade", "check", "primary grade-button", answered === valid.length ? "" : "disabled") : ""}
   </section>`).join("")}</aside>`;
 }
 
-function answerPanel(number) {
-  const entry = info(zhang, number);
-  if (entry.answer && !retrying) {
-    const correct = entry.answer === zhang.keys[number - 1];
+function answerPanel(paper, number) {
+  const key = paper.keys[number - 1];
+  const run = activeChoices(paper);
+  const startButton = !state.active
+    ? action("开始刷题", "start", "arrow", "primary", `data-mode="choice" data-paper="${paper.id}"`)
+    : "";
+  if (key === "-") return `<div class="feedback bad">错题 · 不计分</div>${startButton ? `<div class="lesson-footer">${startButton}</div>` : ""}`;
+  const entry = info(paper, number);
+  if (entry.answer) {
+    const correct = key.includes(entry.answer);
+    const accepted = [...key].join(" 或 ");
     return `<div class="feedback ${correct ? "good" : "bad"}" role="status">${icon(correct ? "check" : "alert")}
-      ${correct ? `答对了 · ${entry.answer}` : `你选了 ${entry.answer}，正确答案是 ${zhang.keys[number - 1]}。已自动标星。`}
+      ${correct ? `答对了 · ${entry.answer}${key.length > 1 ? `（${accepted} 均可）` : ""}` : `你选了 ${entry.answer}，正确答案是 ${accepted}。已自动标星。`}
     </div><div class="lesson-footer">
-      ${action("重做本题", "retry")}
-      ${entry.wrong && correct ? action("订正完成，移出错题", "clear-wrong", "check", "subtle", `data-number="${number}"`) : ""}
+      ${startButton}
+      ${entry.wrong && correct ? action("订正完成，移出错题", "clear-wrong", "check", "subtle", `data-number="${number}" data-paper="${paper.id}"`) : ""}
     </div>`;
   }
-  if (!state.active) {
-    return `<div class="lesson-footer">${action("开始刷题", "start", "arrow", "primary", 'data-mode="choice"')}</div>`;
+  if (startButton) return `<div class="lesson-footer">${startButton}</div>`;
+  if (!run) {
+    return `<div class="lesson-footer">${link("返回正在计时的练习", "#" + (state.active.route || modes[state.active.mode].route), "back")}</div>`;
   }
-  if (state.active.mode !== "choice") {
-    return `<div class="feedback">正在计时：${modes[state.active.mode].name}。结束并保存后可开始选择题。</div>`;
-  }
-  if (!state.active.since) return '<div class="feedback">继续计时后可作答</div>';
+  if (!run.since) return '<div class="feedback">继续计时后可作答</div>';
   return `<div class="answers" role="group" aria-label="选择答案">${[..."ABCD"].map(answer => `
-    <button type="button" class="answer" data-action="select" data-answer="${answer}" aria-pressed="${selectedAnswer === answer}">${answer}</button>`).join("")}</div>
-    <div class="lesson-footer">${action("提交答案", "submit", "check", "primary", `data-number="${number}"${selectedAnswer ? "" : " disabled"}`)}</div>`;
+    <button type="button" class="answer" data-action="select" data-answer="${answer}" data-number="${number}" data-paper="${paper.id}" aria-pressed="${run.draft[number] === answer}">${answer}</button>`).join("")}</div>`;
+}
+
+function scorePanel(run) {
+  const correct = run.answers.filter(entry => entry.correct).length;
+  return `<div class="score-panel" tabindex="-1" role="status">
+    <strong>得分 ${correct * 5} / ${run.answers.length * 5}</strong>
+    <span>答对 ${correct} · 答错 ${run.answers.length - correct}</span>
+  </div>`;
 }
 
 function lessonPage(route, lesson, number) {
@@ -235,21 +318,23 @@ function lessonPage(route, lesson, number) {
   const list = lesson.groups.flatMap(numberList);
   const index = list.indexOf(number);
   const online = lesson.mode === "choice";
+  const run = online ? activeChoices(paper) : null;
   const mode = modes[lesson.mode];
   const controls = `<div class="actions">${lesson.file ? pdf(paper, lesson.file, "打开打印版", false, "primary") : ""}
     ${pdf(paper, "solutions", "下载原版解析", true)}
-    ${!online && !state.active ? action("开始刷题", "start", "arrow", "", `data-mode="${lesson.mode}"`) : ""}</div>`;
+    ${!online && !state.active ? action("开始刷题", "start", "arrow", "", `data-mode="${lesson.mode}" data-paper="${paper.id}"`) : ""}</div>`;
   return `${title(online ? "在线选择题" : mode.name + " · 题号索引", {
-    back: section, tail: controls, subtitle: `2027 · ${paper.title} · 第 1 套`
+    back: section, tail: controls, subtitle: paperLabel(paper)
   })}
     <section class="lesson"><div class="lesson-grid">
       <article class="workspace" aria-labelledby="question-title">
+        ${run?.graded ? scorePanel(run) : ""}
         <div class="workspace-head"><h2 id="question-title">第 ${number} 题</h2><div class="actions">${enlarge(paper, number)}${starControl(paper, number)}</div></div>
-        <img class="question-image" src="${imagePath(paper, number)}" alt="${paper.title}第 1 套第 ${number} 题题面">
-        ${online ? answerPanel(number) : ""}
+        <img class="question-image" src="${imagePath(paper, number)}" alt="${paper.title}第 ${paper.volume} 套第 ${number} 题题面">
+        ${online ? answerPanel(paper, number) : ""}
         <nav class="lesson-footer" aria-label="翻题">
-          ${index > 0 ? link("上一题", `#${route}/${list[index - 1]}`, "back", "subtle") : '<span></span>'}
-          ${index + 1 < list.length ? link("下一题", `#${route}/${list[index + 1]}`, "arrow") : link("返回栏目", "#" + section.id, "arrow")}
+          ${index > 0 ? link("上一题", lessonHref(route + "/" + list[index - 1], paper), "back", "subtle") : '<span></span>'}
+          ${index + 1 < list.length ? link("下一题", lessonHref(route + "/" + list[index + 1], paper), "arrow") : link("返回栏目", "#" + section.id, "arrow")}
         </nav>
       </article>${questionRail(lesson, route, number)}
     </div></section>`;
@@ -265,7 +350,7 @@ function starPage() {
       `<details class="star-item"><summary>${source} · 第 ${number} 题<span class="tag">${entry.wrong ? "错题" : "手动标星"}</span></summary>
       <div class="star-detail"><img loading="lazy" class="question-image" src="${image}" alt="第 ${number} 题题面">
       <div class="actions">${enlarge(paper, number)}${starControl(paper, number)}
-      ${entry.wrong ? link("返回这道题", "#practice/choice/" + number, "arrow") : ""}</div></div>
+      ${entry.wrong ? link("返回这道题", lessonHref("practice/choice/" + number, paper), "arrow") : ""}</div></div>
       </details>`).join("")}</section>`;
   }).join("");
   return `${title("我的标星", { tail: print })}
@@ -282,25 +367,33 @@ function timeText(ms) {
 }
 
 function historyPage() {
-  const answered = numberList(groups[0]).map(number => ({ number, answer: latestSavedAnswer(number) })).filter(entry => entry.answer);
-  const correct = answered.filter(({ number, answer }) => answer === zhang.keys[number - 1]).length;
+  const progress = practicePapers.map(paper => {
+    const valid = scorableQuestions(paper);
+    const answered = valid.map(number => ({ number, answer: latestSavedAnswer(paper, number) })).filter(entry => entry.answer);
+    if (!answered.length) return "";
+    const correct = answered.filter(({ number, answer }) => paper.keys[number - 1].includes(answer)).length;
+    return `<section class="history-paper"><h3>${paperLabel(paper)}</h3>
+      <p class="progress-summary">已完成 <strong>${answered.length} / ${valid.length}</strong> · 答对 <strong>${correct}</strong> · 答错 <strong>${answered.length - correct}</strong></p>
+      <div class="history-tiles">${answered.map(({ number, answer }) => link(`第 ${number} 题 · ${answer}`,
+        lessonHref("practice/choice/" + number, paper), paper.keys[number - 1].includes(answer) ? "check" : "alert")).join("")}</div></section>`;
+  }).join("");
   const dateFormat = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   return `${title("做题记录", {
-    tail: link("回到选择题", "#practice/choice/1", "arrow")
+    tail: link("选填题精练", "#practice", "arrow")
   })}
     <div class="catalog">
-      <div class="panel-head"><h2>选择题进度</h2><span>2027 · 张宇八套卷</span></div>
-      <p class="progress-summary">已完成 <strong>${answered.length} / 10</strong> · 答对 <strong>${correct}</strong> · 答错 <strong>${answered.length - correct}</strong></p>
-      ${answered.length ? `<div class="history-tiles">${answered.map(({ number, answer }) => link(`第 ${number} 题 · ${answer}`,
-        `#practice/choice/${number}`, answer === zhang.keys[number - 1] ? "check" : "alert")).join("")}</div>` : ""}
+      <div class="panel-head"><h2>选择题进度</h2></div>
+      ${progress || '<p class="progress-summary">暂无作答记录</p>'}
       <div class="panel-head session-head"><h2>刷题计时</h2><span>${state.history.length} 次已结束</span></div>
       ${state.history.length ? `<ol class="history-list">${state.history.map(run => {
+        const paper = runPaper(run);
         const right = run.answers.filter(entry => entry.correct).length;
         const hasAnswers = run.answers.length > 0;
-        const summary = `<div><strong>${modes[run.mode].name}刷题</strong><small>${dateFormat.format(run.start)}${hasAnswers ? ` · 作答 ${run.answers.length} 次 · 答对 ${right} 次 · 答错 ${run.answers.length - right} 次` : ""}</small></div>
+        const results = run.graded ? ` · 得分 ${right * 5} / ${run.answers.length * 5}` : "";
+        const summary = `<div><strong>${paperLabel(paper)} · ${modes[run.mode].name}</strong><small>${dateFormat.format(run.start)}${results}${hasAnswers ? ` · 答对 ${right} · 答错 ${run.answers.length - right}` : ""}</small></div>
           <span class="history-summary-time"><time datetime="PT${Math.floor(run.elapsed / 1000)}S">${timeText(run.elapsed)}</time>${hasAnswers ? icon("arrow") : ""}</span>`;
         const details = hasAnswers ? `<details><summary class="history-summary">${summary}</summary>
-          <div class="history-tiles">${run.answers.map(entry => link(`第 ${entry.number} 题 · ${entry.answer} · ${entry.correct ? "答对" : "答错"}`, "#practice/choice/" + entry.number, entry.correct ? "check" : "alert")).join("")}</div>
+          <div class="history-tiles">${run.answers.map(entry => link(`第 ${entry.number} 题 · ${entry.answer} · ${entry.correct ? "答对" : "答错"}`, lessonHref("practice/choice/" + entry.number, paper), entry.correct ? "check" : "alert")).join("")}</div>
           </details>` : `<div class="history-summary">${summary}</div>`;
         return `<li><div class="history-run">${details}</div>${action("删除", "delete-run", "delete", "subtle remove", `data-run="${run.start}" aria-label="删除 ${dateFormat.format(run.start)} 的刷题记录"`)}</li>`;
       }).join("")}</ol>` : '<p class="progress-summary">暂无计时记录</p>'}
@@ -315,27 +408,25 @@ function showTimer() {
     return;
   }
   timerBar.innerHTML = `<div class="timer-time"><span class="timer-dot${run.since ? "" : " paused"}"></span>
-    <span>${run.since ? "刷题计时中" : "计时已暂停"}</span><time id="elapsed" aria-label="已用时间">${timeText(elapsed(run))}</time></div>
-    <div class="actions">${action(run.since ? "暂停" : "继续计时", "pause")}
+    <span>${run.graded ? "已交卷" : run.since ? "刷题计时中" : "计时已暂停"}</span><time id="elapsed" aria-label="已用时间">${timeText(elapsed(run))}</time></div>
+    <div class="actions">${run.graded ? "" : action(run.since ? "暂停" : "继续计时", "pause")}
     ${action("退出不保存", "discard", "", "subtle")}
-    ${action("结束并保存", "finish", "check", "primary")}</div>`;
+    ${run.mode !== "choice" || run.graded ? action("结束并保存", "finish", "check", "primary") : ""}</div>`;
 }
 
 function render({ navigation = false } = {}) {
   const path = location.hash.slice(1);
   const parts = path.split("/");
   const section = sections.find(item => item.id === parts[0]);
-  const route = parts.slice(0, 2).join("/");
-  const lesson = Object.hasOwn(routes, route) ? routes[route] : null;
-  const number = Number(parts[2]);
+  const lesson = lessonAt(path);
   let pageTitle = siteName;
-  if (lesson && lesson.groups.some(group => number >= group.first && number <= group.last) && Number.isInteger(number)) {
-    if (navigation && state.active?.mode === lesson.mode && state.active.route !== path) {
+  if (lesson) {
+    if (navigation && state.active?.mode === lesson.mode && runPaper(state.active) === lesson.paper && state.active.route !== path) {
       state.active.route = path;
       save();
     }
-    content.innerHTML = lessonPage(route, lesson, number);
-    pageTitle = `第 ${number} 题 · ${modes[lesson.mode].name}`;
+    content.innerHTML = lessonPage(lesson.route, lesson, lesson.number);
+    pageTitle = `第 ${lesson.number} 题 · ${lesson.paper.title}第 ${lesson.paper.volume} 套`;
   } else if (section) {
     content.innerHTML = catalog(section);
     pageTitle = section.name;
@@ -361,18 +452,14 @@ function render({ navigation = false } = {}) {
   }
 }
 
-function resetAnswerDraft() {
-  selectedAnswer = "";
-  retrying = false;
-}
-
-function start(mode) {
+function start(mode, paperId) {
   if (state.active) return;
+  const paper = papersById.get(paperId) || paperForMode(mode);
   const now = Date.now();
   const current = location.hash.slice(1);
-  const currentMode = routes[current.split("/").slice(0, 2).join("/")]?.mode;
-  const route = currentMode === mode ? current : modes[mode].route;
-  state.active = { mode, route, start: now, since: now, elapsed: 0, answers: [] };
+  const lesson = lessonAt(current);
+  const route = lesson?.mode === mode && lesson.paper === paper ? current : lessonHref(modes[mode].route, paper).slice(1);
+  state.active = { mode, paperId: paper.id, route, start: now, since: now, elapsed: 0, answers: [], draft: {} };
   save();
   say("刷题计时已开始");
   if (route === current) render();
@@ -381,7 +468,7 @@ function start(mode) {
 
 function toggleTimer() {
   const run = state.active;
-  if (!run) return;
+  if (!run || run.graded) return;
   if (run.since) {
     run.elapsed = elapsed(run);
     run.since = null;
@@ -395,10 +482,10 @@ function toggleTimer() {
 
 function finish() {
   const run = state.active;
-  if (!run) return;
-  state.history.unshift({ ...run, elapsed: elapsed(run), since: null, end: Date.now() });
+  if (!run || (run.mode === "choice" && !run.graded)) return;
+  const { draft, ...record } = run;
+  state.history.unshift({ ...record, elapsed: elapsed(run), since: null, end: Date.now() });
   state.active = null;
-  resetAnswerDraft();
   save();
   say("本次刷题已保存");
   if (location.hash === "#history") render();
@@ -408,7 +495,6 @@ function finish() {
 function discard() {
   if (!state.active || !window.confirm("退出本次刷题并放弃做题记录？")) return;
   state.active = null;
-  resetAnswerDraft();
   save();
   render();
   say("已退出，本次记录未保存");
@@ -423,7 +509,8 @@ function deleteRun(start) {
 }
 
 function toggleStar(id, number, trigger) {
-  const paper = id === zhang.id ? zhang : xiehou;
+  const paper = papersById.get(id);
+  if (!paper) return;
   const key = questionKey(paper, number);
   const entry = { ...state.questions[key] };
   if (entry.wrong) return;
@@ -446,17 +533,37 @@ function toggleStar(id, number, trigger) {
   say(entry.star ? "已加入标星题" : "已取消标星");
 }
 
-function submit(number) {
-  if (state.active?.mode !== "choice" || !state.active.since || !selectedAnswer) return;
-  const key = questionKey(zhang, number);
-  const correct = selectedAnswer === zhang.keys[number - 1];
-  if (!correct) state.questions[key] = { ...state.questions[key], wrong: true };
-  state.active.answers.push({ number, answer: selectedAnswer, correct });
+function selectAnswer(id, number, answer) {
+  const paper = papersById.get(id);
+  const run = activeChoices(paper);
+  if (!run?.since || run.graded || !scorableQuestions(paper).includes(number) || !["A", "B", "C", "D"].includes(answer)) return;
+  run.draft[number] = answer;
   save();
-  resetAnswerDraft();
   render();
-  content.querySelector(".feedback")?.setAttribute("tabindex", "-1");
-  content.querySelector(".feedback")?.focus({ preventScroll: true });
+  content.querySelector(`.answer[data-answer="${answer}"]`)?.focus({ preventScroll: true });
+}
+
+function gradeChoices() {
+  const run = state.active;
+  if (run?.mode !== "choice" || run.graded) return;
+  const paper = runPaper(run);
+  const numbers = scorableQuestions(paper);
+  if (numbers.some(number => !run.draft[number])) return;
+  run.answers = numbers.map(number => {
+    const answer = run.draft[number];
+    const correct = paper.keys[number - 1].includes(answer);
+    if (!correct) {
+      const key = questionKey(paper, number);
+      state.questions[key] = { ...state.questions[key], wrong: true };
+    }
+    return { number, answer, correct };
+  });
+  run.elapsed = elapsed(run);
+  run.since = null;
+  run.graded = true;
+  save();
+  render();
+  content.querySelector(".score-panel")?.focus();
 }
 
 document.addEventListener("click", event => {
@@ -465,29 +572,24 @@ document.addEventListener("click", event => {
   const { action: name, mode, answer, paper } = trigger.dataset;
   const number = Number(trigger.dataset.number);
   switch (name) {
-    case "start": start(mode); break;
+    case "start": start(mode, paper); break;
     case "pause": toggleTimer(); break;
     case "finish": finish(); break;
     case "discard": discard(); break;
     case "delete-run": deleteRun(Number(trigger.dataset.run)); break;
     case "star": toggleStar(paper, number, trigger); break;
-    case "select":
-      selectedAnswer = answer;
-      content.querySelectorAll(".answer").forEach(button => button.setAttribute("aria-pressed", button.dataset.answer === answer));
-      content.querySelector('[data-action="submit"]').disabled = false;
-      break;
-    case "submit": submit(number); break;
-    case "retry":
-      retrying = true;
-      render();
-      content.querySelector(".answer, .workspace [data-action='start']")?.focus();
-      break;
-    case "clear-wrong":
-      state.questions[questionKey(zhang, number)].wrong = false;
+    case "select": selectAnswer(paper, number, answer); break;
+    case "grade": gradeChoices(); break;
+    case "clear-wrong": {
+      const item = papersById.get(paper);
+      const mark = item && state.questions[questionKey(item, number)];
+      if (!mark) break;
+      mark.wrong = false;
       save();
       render();
       say("订正完成，已移出错题记录");
       break;
+    }
     case "print":
       if (!window.printStarred(starredItems())) say("请允许此网站打开打印预览窗口");
       break;
@@ -499,13 +601,11 @@ document.querySelector(".skip").addEventListener("click", event => {
   content.focus();
 });
 window.addEventListener("hashchange", () => {
-  resetAnswerDraft();
   render({ navigation: true });
 });
 window.addEventListener("storage", event => {
   if (event.key === storageKey || event.key === null) {
     state = readState();
-    resetAnswerDraft();
     render();
   }
 });

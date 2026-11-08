@@ -1,0 +1,32 @@
+% !TEX program = xelatex
+\documentclass[zihao=5,fontset=windows,oneside]{exam-zh}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,patterns}
+\input{\WorksheetCommon}
+\providecommand{\eu}{\mathrm e}
+\providecommand{\ii}{\mathrm i}
+\providecommand{\vect}[1]{\symbfit{#1}}
+\providecommand{\mat}[1]{\begin{pmatrix}#1\end{pmatrix}}
+\providecommand{\circlednumber}[1]{\ifcase#1\or①\or②\or③\or④\fi}
+\newcommand{\WorkSpace}{\ifdefined\QuestionCrops\else\vfill\fi}
+\newcommand{\WorkPageBreak}{\ifdefined\QuestionCrops\else\clearpage\fi}
+\newcommand{\SeriesChoice}{\input{choice.tex}}
+\newcommand{\SeriesFill}{%
+  \ifdefined\QuestionCrops\else
+    \WorksheetTitle{填空题}
+    \section{填空题：第11～16题，每小题5分，共30分。}
+    \examsetup{question/bottom-sep=11pt}
+  \fi
+  \input{fill.tex}%
+}
+\newcommand{\SeriesLong}{%
+  \examsetup{question={show-points=true,points-prelabel={（本题满分},points-postlabel={分）},points-separate-par=true}}
+  \ifdefined\QuestionCrops\else
+    \WorksheetTitle{解答题}
+    \section{解答题：第17～22题，共70分。解答应写出文字说明、证明过程或演算步骤。}
+  \fi
+  \input{long.tex}%
+}
+\begin{document}
+\csname Series\WorksheetKind\endcsname
+\end{document}
