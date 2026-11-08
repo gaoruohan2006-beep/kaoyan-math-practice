@@ -1,0 +1,24 @@
+\examsetup{
+  page/size=a4paper,
+  page/show-head=false,
+  page/foot-content={第;页（共;页）},
+  sealline/show=false,
+  question={hang=true,show-answer=false,top-sep=5pt,bottom-sep=3pt},
+  choices={columns=0,column-sep=1.6em,linesep=5pt,label-pos=top-left},
+  fillin={no-answer-type=none,width=19mm},
+}
+\linespread{1.1}
+\setCJKfamilyfont{examcoverfont}[BoldFont=FandolSong-Bold.otf]{FandolSong-Regular.otf}
+\providecommand{\dd}{\,\mathrm d}
+\newcommand{\WorksheetTitle}[1]{%
+  \begin{center}
+    {\CJKfamily{examcoverfont}\bfseries\fontsize{17}{22}\selectfont 2027年张宇考研数学预测8套卷}\\[5pt]
+    {\CJKfamily{examcoverfont}\fontsize{13}{18}\selectfont 数学一 · 第1套 · #1}
+  \end{center}\vspace{8pt}%
+}
+\newcommand{\QuestionBreak}{}
+\ifdefined\QuestionCrops
+  \geometry{textwidth=468bp,hcentering}
+  \renewcommand{\QuestionBreak}{\clearpage}
+  \AtBeginDocument{\pagestyle{empty}}
+\fi

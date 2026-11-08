@@ -1,0 +1,91 @@
+:root {
+  color: #191915;
+  background: #efeee8;
+  font-family: "Songti SC", SimSun, "Noto Serif CJK SC", serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+.print-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 15px clamp(18px, 5vw, 70px);
+  border-bottom: 1px solid #d7d5cb;
+  background: #f8f7f1;
+  font: 700 16px/1.5 var(--script);
+}
+
+.print-toolbar strong { font-size: 16px; }
+.print-toolbar p { margin: 4px 0 0; color: #57564e; }
+.print-actions { display: flex; gap: 8px; }
+
+.print-actions button {
+  cursor: pointer;
+  border: 1px solid #cfcdc1;
+  border-radius: 5px;
+  padding: 8px 12px;
+  background: #f8f7f1;
+  color: #191915;
+  font: inherit;
+}
+
+.print-actions #print-now { border-color: #191915; background: #191915; color: #fff; }
+.print-actions #print-now:disabled { opacity: .45; cursor: wait; }
+
+.print-paper {
+  width: min(calc(100% - 28px), 210mm);
+  margin: 24px auto;
+  min-height: 65vh;
+  padding: clamp(22px, 6vw, 17mm) clamp(14px, 6vw, 22mm);
+  background: #fff;
+  box-shadow: 0 6px 28px #17161113;
+}
+
+.print-masthead {
+  padding-bottom: 5mm;
+  border-bottom: 1px solid #191915;
+  break-inside: avoid;
+  break-after: avoid;
+}
+
+.print-eyebrow, .print-summary { margin: 0; font-size: 10pt; }
+.print-title { margin: 2mm 0; font-size: 24pt; line-height: 1.15; }
+
+.print-group-heading {
+  margin: 6mm 0 3mm;
+  font-size: 14pt;
+  line-height: 1.2;
+}
+
+.print-question {
+  margin: 0 0 5mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-question + .print-question { padding-top: 3mm; }
+.print-source { margin: 0 0 2mm; color: #4b4a43; font-size: 9pt; }
+.print-question-image { display: block; width: 100%; height: auto; }
+.print-writing-space { height: 28mm; border-bottom: 1px dotted #c4c4c1; }
+
+@page {
+  size: A4 portrait;
+  margin: 16mm 22mm 18mm;
+  @bottom-center {
+    content: "第" counter(page) "页（共" counter(pages) "页）";
+    font: 9pt "Songti SC", SimSun, "Noto Serif CJK SC", serif;
+  }
+}
+
+@media print {
+  :root { background: #fff; }
+  .print-toolbar { display: none; }
+  .print-paper { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+}

@@ -1,0 +1,51 @@
+\usepackage{needspace}
+% Use exam-zh's native class, question, choices, title and footer interfaces.
+\examsetup{
+  page/size=a4paper,
+  page/show-head=false,
+  page/foot-content={第;页（共;页）},
+  sealline/show=false,
+  question={hang=true,show-answer=false,top-sep=5pt,bottom-sep=3pt},
+  choices={columns=0,column-sep=1.6em,linesep=5pt,label-pos=top-left},
+  fillin={no-answer-type=none,width=19mm},
+  title/title-format={\Large\bfseries},
+}
+\linespread{1.1}
+\setCJKsansfont[BoldFont=SimHei]{SimHei}
+\setCJKfamilyfont{zhhei}[BoldFont=SimHei]{SimHei}
+\setCJKfamilyfont{examcoverfont}[BoldFont=FandolSong-Bold.otf]{FandolSong-Regular.otf}
+\xeCJKDeclareCharClass{CJK}{"2160 -> "2161}
+\providecommand{\dd}{\,\mathrm d}
+\newcommand{\examcover}{%
+  \title{\CJKfamily{examcoverfont}\fontsize{17}{22}\selectfont
+    邂逅遗憾27年11月周测卷\\[5pt]
+    {\fontsize{13}{18}\selectfont 数学（一）}}
+  \maketitle
+  \vspace{15pt}
+  \begin{center}{\CJKfamily{examcoverfont}\bfseries\fontsize{13}{18}\selectfont 考生注意事项}\end{center}
+  \vspace{13pt}
+  \begin{enumerate}[label=\arabic*.,leftmargin=3em,labelsep=.6em,itemsep=8pt,topsep=0pt,parsep=0pt]
+  \item 答题前，考生须在答题卡指定位置上填写考生编号和考生姓名；在答题卡指定位置上填写报考单位、考生姓名和考生编号，并涂写考生编号信息点。
+  \item 选择题的答案必须涂写在答题卡相应题号的选项上，非选择题的答案必须书写在答题卡指定位置的边框区域内。超出答题区域书写的答案无效；在草稿纸、试题册上答题无效。
+  \item 填（书）写部分必须使用黑色字迹签字笔书写，字迹工整、笔迹清楚；涂写部分必须使用2B铅笔填涂。
+  \item 考试结束，将答题卡和试题册按规定交回。
+  \end{enumerate}
+  \vspace{27pt}
+  \begin{center}（以下信息考生必须认真填写）\par\vspace{9pt}
+  \resizebox{\linewidth}{!}{\begin{tikzpicture}[x=1pt,y=1pt,line width=.45pt]
+    \draw (0,0) rectangle (\linewidth,67.2);
+    \draw (0,33.6)--(\linewidth,33.6);
+    \draw (61.2,0)--(61.2,67.2);
+    \pgfmathsetmacro{\cellwidth}{(\linewidth-61.2)/15}
+    \foreach \i in {1,...,14}{\draw ({61.2+\i*\cellwidth},33.6)--({61.2+\i*\cellwidth},67.2);}
+    \node at (30.6,50.4){考生编号};
+    \node at (30.6,16.8){考生姓名};
+  \end{tikzpicture}}
+  \end{center}
+  \clearpage
+}
+\newcommand{\choiceheading}{\section{选择题：第1～10小题，每小题5分，共50分。下列每小题给出的四个选项中，只有一个选项最符合题目要求。}}
+\newcommand{\fillheading}{\section{填空题：第11～16小题，每小题5分，共30分。}}
+\newcommand{\solveheading}{\section{解答题：第17～22题，共70分。解答应写出文字说明、证明过程或演算步骤。}}
+\AtBeginDocument{\hypersetup{pdftitle={邂逅遗憾27年11月周测卷},pdfauthor={}}}
+

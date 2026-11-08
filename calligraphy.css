@@ -1,0 +1,16 @@
+@font-face {
+  font-family: "Title Latin";
+  src: url("assets/fonts/title-latin.ttf") format("truetype");
+  font-display: swap;
+  unicode-range: U+0030-0039, U+0041-005A, U+0061-007A;
+}
+
+@font-face {
+  font-family: "Title Han";
+  src: url("assets/fonts/title-han.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --script: "Title Latin", "Title Han", "KaiTi", "PingFang SC", system-ui, sans-serif;
+}
