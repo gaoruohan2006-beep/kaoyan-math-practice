@@ -16,6 +16,8 @@
 \setCJKfamilyfont{examcoverfont}[BoldFont=FandolSong-Bold.otf]{FandolSong-Regular.otf}
 \xeCJKDeclareCharClass{CJK}{"2160 -> "2161}
 \providecommand{\dd}{\,\mathrm d}
+\newfontface\distributionfont{latinmodern-math.otf}
+\newcommand{\dist}{\mathrel{\text{\distributionfont\symbol{"223C}}}}
 \newcommand{\examcover}{%
   \title{\CJKfamily{examcoverfont}\fontsize{17}{22}\selectfont
     邂逅遗憾27年11月周测卷\\[5pt]

@@ -8,8 +8,7 @@ const series = [
   },
   {
     id: "lilin", title: "李林六套卷",
-    keys: ["ACDCDBADAB", "CCBBBDDABC", "CCACDBCDDD", "CBDCBCDDDB",
-      ["B", "D", "D", "B", "C", "C", "D", "AB", "C", "C"], "CCCDD-DBDA"],
+    keys: ["ACDCDBADAB", "CCBBBDDABC", "CCACDBCDDD", "CBDCBCDDDB", "BDDBCCDBCC", "CCCDD-DBDA"],
   },
 ].map(({ id, title, keys }) => ({
   title,
@@ -52,6 +51,7 @@ const routes = {
 };
 
 const storageKey = "mock-paper-studio.v1";
+const draftEdition = 2;
 const siteName = "2028RayanG数学练习题库";
 const content = document.querySelector("#content");
 const timerBar = document.querySelector("#timerbar");
@@ -68,6 +68,11 @@ function readState() {
     if (active?.mode === "choice" && !active.draft) {
       active.draft = Object.fromEntries(active.answers.map(({ number, answer }) => [number, answer]));
       active.answers = [];
+    }
+    if (active?.paperId === "lilin-2027-06-05" && active.mode === "choice" &&
+        !active.graded && active.draftEdition !== draftEdition) {
+      delete active.draft[8];
+      active.draftEdition = draftEdition;
     }
     return { questions: saved?.questions || {}, active, history: saved?.history || [] };
   } catch {
@@ -159,17 +164,17 @@ function info(paper, number) {
   const marks = state.questions[questionKey(paper, number)] || {};
   if (!paper.keys || number > 10 || paper.keys[number - 1] === "-") return marks;
   const run = activeChoices(paper);
-  if (run) return { ...marks, answer: run.answers.find(entry => entry.number === number)?.answer };
-  return { ...marks, answer: latestSavedAnswer(paper, number) };
+  const attempt = run ? run.answers.find(entry => entry.number === number) : latestSavedAttempt(paper, number);
+  return { ...marks, ...attempt };
 }
 
-function latestSavedAnswer(paper, number) {
+function latestSavedAttempt(paper, number) {
   for (const run of state.history) {
     if (run.mode !== "choice" || runPaper(run) !== paper) continue;
     const attempt = run.answers.findLast(entry => entry.number === number);
-    if (attempt) return attempt.answer;
+    if (attempt) return attempt;
   }
-  return "";
+  return null;
 }
 
 function numberList(group) {
@@ -267,7 +272,10 @@ function questionRail(lesson, route, current) {
     <div class="tiles">${numberList(group).map(number => {
       const entry = info(paper, number);
       const key = paper.keys?.[number - 1];
-      const status = key === "-" ? "invalid" : draft?.[number] ? "answered" : entry.answer ? key.includes(entry.answer) ? "right" : "wrong" : "";
+      let status = "";
+      if (key === "-") status = "invalid";
+      else if (draft?.[number] || (entry.answer && entry.correct !== key.includes(entry.answer))) status = "answered";
+      else if (entry.answer) status = entry.correct ? "right" : "wrong";
       const mark = entry.star || entry.wrong;
       const labels = { right: "，答对", wrong: "，答错", answered: "，已答", invalid: "，错题，不计分" };
       const label = `第 ${number} 题${labels[status] || ""}${mark ? "，已标星" : ""}`;
@@ -287,6 +295,9 @@ function answerPanel(paper, number) {
   const entry = info(paper, number);
   if (entry.answer) {
     const correct = key.includes(entry.answer);
+    if (entry.correct !== correct) {
+      return `<div class="feedback">旧版题面 · 上次选 ${entry.answer}</div>${startButton ? `<div class="lesson-footer">${startButton}</div>` : ""}`;
+    }
     const accepted = [...key].join(" 或 ");
     return `<div class="feedback ${correct ? "good" : "bad"}" role="status">${icon(correct ? "check" : "alert")}
       ${correct ? `答对了 · ${entry.answer}${key.length > 1 ? `（${accepted} 均可）` : ""}` : `你选了 ${entry.answer}，正确答案是 ${accepted}。已自动标星。`}
@@ -369,13 +380,13 @@ function timeText(ms) {
 function historyPage() {
   const progress = practicePapers.map(paper => {
     const valid = scorableQuestions(paper);
-    const answered = valid.map(number => ({ number, answer: latestSavedAnswer(paper, number) })).filter(entry => entry.answer);
+    const answered = valid.map(number => latestSavedAttempt(paper, number)).filter(Boolean);
     if (!answered.length) return "";
-    const correct = answered.filter(({ number, answer }) => paper.keys[number - 1].includes(answer)).length;
+    const correct = answered.filter(entry => entry.correct).length;
     return `<section class="history-paper"><h3>${paperLabel(paper)}</h3>
       <p class="progress-summary">已完成 <strong>${answered.length} / ${valid.length}</strong> · 答对 <strong>${correct}</strong> · 答错 <strong>${answered.length - correct}</strong></p>
-      <div class="history-tiles">${answered.map(({ number, answer }) => link(`第 ${number} 题 · ${answer}`,
-        lessonHref("practice/choice/" + number, paper), paper.keys[number - 1].includes(answer) ? "check" : "alert")).join("")}</div></section>`;
+      <div class="history-tiles">${answered.map(({ number, answer, correct }) => link(`第 ${number} 题 · ${answer}`,
+        lessonHref("practice/choice/" + number, paper), correct ? "check" : "alert")).join("")}</div></section>`;
   }).join("");
   const dateFormat = new Intl.DateTimeFormat("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
   return `${title("做题记录", {
@@ -459,7 +470,7 @@ function start(mode, paperId) {
   const current = location.hash.slice(1);
   const lesson = lessonAt(current);
   const route = lesson?.mode === mode && lesson.paper === paper ? current : lessonHref(modes[mode].route, paper).slice(1);
-  state.active = { mode, paperId: paper.id, route, start: now, since: now, elapsed: 0, answers: [], draft: {} };
+  state.active = { mode, paperId: paper.id, route, start: now, since: now, elapsed: 0, answers: [], draft: {}, draftEdition };
   save();
   say("刷题计时已开始");
   if (route === current) render();
