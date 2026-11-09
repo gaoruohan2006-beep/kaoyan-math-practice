@@ -52,15 +52,17 @@ def render_questions(pdf, numbers, destination):
             width = 468
             left = (page.rect.width - width) / 2
             bounds = pymupdf.Rect(left, 0, left + width, page.rect.height)
-            pixmap = page.get_pixmap(dpi=300, clip=bounds, colorspace=pymupdf.csRGB)
+            dpi = 300
+            crop = (bounds * pymupdf.Matrix(dpi / 72, dpi / 72)).irect
+            pixmap = page.get_pixmap(dpi=dpi, colorspace=pymupdf.csRGB)
             image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
             ink = ImageChops.invert(image.convert("L")).point(lambda value: 255 if value > 20 else 0).getbbox()
             if not ink or not re.search(rf"(?<!\d){number}\s*[.．]", page.get_text()):
                 raise ValueError(f"{pdf.name}: expected question {number}")
-            if ink[0] < 2 or ink[2] > image.width - 2:
-                print(f"{pdf.name} Q{number}: ink near horizontal crop boundary")
+            if ink[0] < crop.x0 or ink[2] > crop.x1:
+                raise ValueError(f"{pdf.name} Q{number}: ink extends outside the question frame")
             margin = 10
-            image.crop((0, max(0, ink[1] - margin), image.width, ink[3] + margin)).save(
+            image.crop((crop.x0, max(0, ink[1] - margin), crop.x1, min(image.height, ink[3] + margin))).save(
                 destination / f"q{number:02}.png", optimize=True
             )
 

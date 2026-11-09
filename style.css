@@ -19,6 +19,11 @@
   --serif: "Studio Serif", "Songti SC", "Noto Serif CJK SC", "SimSun", "STSong", serif;
 }
 * { box-sizing: border-box; }
+main :where(p, .feedback, .star-item summary, .history-summary small) {
+  text-align: justify;
+  text-justify: inter-character;
+  line-break: strict;
+}
 body {
   display: flow-root;
   margin: 0;
