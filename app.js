@@ -10,11 +10,17 @@ const series = [
     id: "lilin", title: "李林六套卷",
     keys: ["ACDCDBADAB", "CCBBBDDABC", "CCACDBCDDD", "CBDCBCDDDB", "BDDBCCDBCC", "CCCDD-DBDA"],
   },
-].map(({ id, title, keys }) => ({
+  {
+    id: "chaoyue", year: 2025, title: "合工大超越十套卷", lastQuestion: 16,
+    keys: ["BCDABDAAAC", "CBDADCBBAD", "DAADDCADAC", "CDBDABCBDC", "ADBACBBBAB",
+      "CDAAADCDAC", "CCBABCBDCD",
+      "CDBBDABBCD", "CBBBCDCBCB", "CABADCDDDC"],
+  },
+].map(({ id, year = 2027, title, keys, lastQuestion = 22 }) => ({
   title,
   papers: keys.map((answers, i) => ({
-    id: `${id}-2027-${String(keys.length).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
-    title, year: 2027, volume: i + 1, keys: [...answers],
+    id: `${id}-${year}-${String(keys.length).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
+    title, year, volume: i + 1, keys: [...answers], lastQuestion,
   })),
 }));
 const practicePapers = series.flatMap(item => item.papers);
@@ -24,6 +30,7 @@ const xiehou = {
   title: "邂逅遗憾模拟卷",
   year: 2027,
   volume: 1,
+  lastQuestion: 22,
 };
 const allPapers = [...practicePapers, xiehou];
 const papersById = new Map(allPapers.map(paper => [paper.id, paper]));
@@ -156,7 +163,8 @@ function lessonAt(path) {
   const paper = id ? papersById.get(id) : paperForMode(lesson.mode);
   const number = Number(rawNumber);
   if (!paper || (lesson.mode === "paper") !== (paper === xiehou) ||
-      !Number.isInteger(number) || !lesson.groups.some(group => number >= group.first && number <= group.last)) return null;
+      !Number.isInteger(number) || number > paper.lastQuestion ||
+      !lesson.groups.some(group => number >= group.first && number <= group.last)) return null;
   return { ...lesson, route, paper, number };
 }
 
@@ -187,6 +195,7 @@ function scorableQuestions(paper) {
 
 function starredItems() {
   return groups.flatMap(group => allPapers.flatMap(paper => numberList(group).flatMap(number => {
+    if (number > paper.lastQuestion) return [];
     const entry = state.questions[questionKey(paper, number)] || {};
     if (!entry.star && !entry.wrong) return [];
     return [{ paper, number, type: group.id, entry, source: paperLabel(paper), image: imagePath(paper, number) }];
@@ -230,7 +239,8 @@ function catalogRow(paper, controls) {
 }
 
 function catalog(section) {
-  const collections = section.id === "papers" ? [{ title: xiehou.title, papers: [xiehou] }] : series;
+  const collections = section.id === "papers" ? [{ title: xiehou.title, papers: [xiehou] }] :
+    series.filter(collection => section.id !== "long" || collection.papers[0].lastQuestion > 16);
   const solutions = paper => pdf(paper, "solutions", "下载原版解析", true);
   const controls = paper => {
     if (section.id === "practice") {

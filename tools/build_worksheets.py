@@ -12,8 +12,9 @@ import pymupdf
 
 ROOT = Path(__file__).resolve().parents[1]
 SERIES = {
-    "zhang": (8, "2027年张宇考研数学预测8套卷"),
-    "lilin": (6, "2027年李林考研数学冲刺预测6套卷"),
+    "zhang": (2027, 8, "2027年张宇考研数学预测8套卷"),
+    "lilin": (2027, 6, "2027年李林考研数学冲刺预测6套卷"),
+    "chaoyue": (2025, 10, "2025年合工大超越数学一模拟卷"),
 }
 QUESTION_NUMBERS = {"Choice": range(1, 11), "Fill": range(11, 17), "Long": range(17, 23)}
 
@@ -65,12 +66,15 @@ def render_questions(pdf, numbers, destination):
 
 
 def build(series, volume):
-    total, title = SERIES[series]
+    year, total, title = SERIES[series]
     source = ROOT / "tex" / series / f"{volume:02}"
-    destination = ROOT / "assets" / f"{series}-2027-{total:02}-{volume:02}"
+    destination = ROOT / "assets" / f"{series}-{year}-{total:02}-{volume:02}"
+    kinds = ("Choice", "Fill") if series == "chaoyue" else tuple(QUESTION_NUMBERS)
     with TemporaryDirectory(prefix=f"{series}-{volume:02}-") as temp:
         scratch = Path(temp)
-        for kind, numbers in QUESTION_NUMBERS.items():
+        outputs = []
+        for kind in kinds:
+            numbers = QUESTION_NUMBERS[kind]
             crops = compile_pdf(source, scratch, volume, title, kind, crops=True)
             render_questions(crops, numbers, scratch)
             if kind != "Choice":
@@ -81,10 +85,12 @@ def build(series, volume):
                             raise ValueError(f"{pdf.name}: non-A4 page")
                         if "共" not in page.get_text() or "共0页" in page.get_text():
                             raise ValueError(f"{pdf.name}: invalid footer")
+                outputs.append(pdf)
         destination.mkdir(parents=True, exist_ok=True)
-        for file in [*scratch.glob("q*.png"), scratch / "fill.pdf", scratch / "long.pdf"]:
+        for file in [*scratch.glob("q*.png"), *outputs]:
             shutil.copyfile(file, destination / file.name)
-    print(f"{series} {volume:02}: 22 questions, fill.pdf, long.pdf")
+    print(f"{series} {volume:02}: {sum(len(QUESTION_NUMBERS[kind]) for kind in kinds)} questions, "
+          + ", ".join(file.name for file in outputs))
 
 
 if __name__ == "__main__":

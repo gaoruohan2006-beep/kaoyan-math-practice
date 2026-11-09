@@ -2,7 +2,7 @@
 
 <https://gaoruohan2006-beep.github.io/kaoyan-math-practice/>
 
-考研数学一静态练习网站。收录 2027 年张宇八套卷、李林六套卷和邂逅遗憾模拟卷第 1 套。张宇和李林的选择题可在线作答，填空题和解答题分别有 A4 打印版。邂逅卷放在套卷精刷。
+考研数学一静态练习网站。收录 2027 年张宇八套卷、李林六套卷和邂逅遗憾模拟卷第 1 套，以及 2025 年合工大超越十套卷的选填题。选择题可在线作答，填空题有 A4 打印版。张宇和李林的解答题在大题精啃，邂逅卷在套卷精刷。
 
 - 点击「开始刷题」启动计时。选择题答完后点击「交卷出分」，统一显示总分和各题正误。可暂停、继续、结束并保存或退出不保存。已保存的单次记录可逐条删除。
 - 交卷后答错的题自动标星，其他题可手动标星。标星独立于做题记录，在「我的标星」中可按选择、填空、解答的顺序打印或保存为 PDF。
@@ -12,9 +12,13 @@
 
 可直接打开 `index.html`，也可在项目根目录运行 `python -m http.server 8767`。GitHub Pages 从 `main` 分支根目录发布。
 
-题面采用 XeLaTeX 和 `exam-zh`。邂逅卷的编译入口是 `tex/xiehou/main.tex`。张宇第 1 套沿用 `tex/zhang` 下的 `fill.tex`、`long.tex` 和 `choice-crops.tex`。张宇第 2–8 套和李林第 1–6 套共用模板。安装 PyMuPDF、Pillow 和 TeX Live 后，可在仓库根目录运行 `python tools/build_worksheets.py zhang 2 3 4 5 6 7 8` 或 `python tools/build_worksheets.py lilin 1 2 3 4 5 6`。网页题面是编译结果的 300 DPI 渲染。两套书的解析按套截取原 PDF 页，邂逅解析保留整份原文件。
+题面采用 XeLaTeX 和 `exam-zh`。邂逅卷的编译入口是 `tex/xiehou/main.tex`。张宇第 1 套沿用 `tex/zhang` 下的 `fill.tex`、`long.tex` 和 `choice-crops.tex`。张宇第 2–8 套、李林第 1–6 套和合工大超越第 1–10 套共用模板。安装 PyMuPDF、Pillow 和 TeX Live 后，在仓库根目录运行 `python tools/build_worksheets.py`，传入系列名 `zhang`、`lilin` 或 `chaoyue` 及卷号。网页题面是编译结果的 300 DPI 渲染。
 
-概率题的分布记号使用 `\dist`，字形取自 Latin Modern Math。
+概率分布记号 `\dist` 和无穷小等价记号 `\asympteq` 使用 Latin Modern Math 的横向波浪号。
+
+## 2025 合工大超越题面核对
+
+题面来自做题本的 2025 年部分，已结合手稿和勘误修订题面与判分。解析下载取自手稿的选填部分，第 5 套第 12 题和第 9 套第 14 题的缺漏解直接补在相应解析页。第 7 套第 8 题原选项 B 和 D 均成立，修订版把 B 的第二个关系改为严格小于，交卷按 D 判分。
 
 ## 李林题面核对
 

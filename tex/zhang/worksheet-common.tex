@@ -10,8 +10,10 @@
 \linespread{1.1}
 \setCJKfamilyfont{examcoverfont}[BoldFont=FandolSong-Bold.otf]{FandolSong-Regular.otf}
 \providecommand{\dd}{\,\mathrm d}
-\newfontface\distributionfont{latinmodern-math.otf}
-\newcommand{\dist}{\mathrel{\text{\distributionfont\symbol{"223C}}}}
+\newfontface\relationfont{latinmodern-math.otf}
+\newcommand{\relationtilde}{\mathrel{\text{\relationfont\symbol{"223C}}}}
+\newcommand{\dist}{\relationtilde}
+\newcommand{\asympteq}{\relationtilde}
 \providecommand{\VolumeNumber}{1}
 \providecommand{\SeriesTitle}{2027年张宇考研数学预测8套卷}
 \newcommand{\WorksheetTitle}[1]{%
