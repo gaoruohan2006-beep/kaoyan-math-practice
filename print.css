@@ -6,11 +6,6 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; }
-.print-toolbar p {
-  text-align: justify;
-  text-justify: inter-character;
-  line-break: strict;
-}
 
 .print-toolbar {
   position: sticky;
@@ -27,7 +22,8 @@ body { margin: 0; }
   font: 700 16px/1.5 var(--script);
 }
 
-.print-toolbar p { margin: 0; color: #57564e; }
+.print-toolbar strong { font-size: 16px; }
+.print-toolbar p { margin: 4px 0 0; color: #57564e; }
 .print-actions { display: flex; gap: 8px; }
 
 .print-actions button {
@@ -53,13 +49,20 @@ body { margin: 0; }
 }
 
 .print-masthead {
-  margin-bottom: 7mm;
+  padding-bottom: 5mm;
+  border-bottom: 1px solid #191915;
   break-inside: avoid;
   break-after: avoid;
 }
 
-.print-title { margin: 0 0 2mm; font-size: 24pt; line-height: 1.15; }
-.print-time { font-size: 10pt; }
+.print-eyebrow, .print-summary { margin: 0; font-size: 10pt; }
+.print-title { margin: 2mm 0; font-size: 24pt; line-height: 1.15; }
+
+.print-group-heading {
+  margin: 6mm 0 3mm;
+  font-size: 14pt;
+  line-height: 1.2;
+}
 
 .print-question {
   margin: 0 0 5mm;
@@ -67,31 +70,22 @@ body { margin: 0; }
   page-break-inside: avoid;
 }
 
-.print-question-label {
-  margin: 0 0 1mm;
-  color: #b01824;
-  font-size: 10pt;
-  line-height: 1.35;
-  print-color-adjust: exact;
-  -webkit-print-color-adjust: exact;
-}
-
+.print-question + .print-question { padding-top: 3mm; }
+.print-source { margin: 0 0 2mm; color: #4b4a43; font-size: 9pt; }
 .print-question-image { display: block; width: 100%; height: auto; }
+.print-writing-space { height: 28mm; border-bottom: 1px dotted #c4c4c1; }
 
 @page {
   size: A4 portrait;
   margin: 16mm 22mm 18mm;
-  @top-left { content: ""; }
-  @top-center { content: ""; }
-  @top-right { content: ""; }
-  @bottom-left { content: ""; }
-  @bottom-center { content: ""; }
-  @bottom-right { content: ""; }
+  @bottom-center {
+    content: "第" counter(page) "页（共" counter(pages) "页）";
+    font: 9pt "Songti SC", SimSun, "Noto Serif CJK SC", serif;
+  }
 }
 
 @media print {
   :root { background: #fff; }
   .print-toolbar { display: none; }
   .print-paper { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
-  .print-question-image { max-height: 230mm; object-fit: contain; object-position: left top; }
 }

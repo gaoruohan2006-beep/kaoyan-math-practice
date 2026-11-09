@@ -2,25 +2,25 @@
 
 const series = [
   {
-    id: "zhang", title: "张宇八套卷", printPrefix: "张",
+    id: "zhang", title: "张宇八套卷",
     keys: ["CBADADCCAB", "ACDBDCBABD", "BBCBAADDCC", "DACBDDABAC",
       "CCDABACBBD", "BCADCCBDAB", "DCAABCBACD", "BACADACBDC"],
   },
   {
-    id: "lilin", title: "李林六套卷", printPrefix: "李",
+    id: "lilin", title: "李林六套卷",
     keys: ["ACDCDBADAB", "CCBBBDDABC", "CCACDBCDDD", "CBDCBCDDDB", "BDDBCCDBCC", "CCCDD-DBDA"],
   },
   {
-    id: "chaoyue", year: 2025, title: "合工大超越十套卷", printPrefix: "超越", lastQuestion: 16,
+    id: "chaoyue", year: 2025, title: "合工大超越十套卷", lastQuestion: 16,
     keys: ["BCDABDAAAC", "CBDADCBBAD", "DAADDCADAC", "CDBDABCBDC", "ADBACBBBAB",
       "CDAAADCDAC", "CCBABCBDCD",
       "CDBBDABBCD", "CBBBCDCBCB", "CABADCDDDC"],
   },
-].map(({ id, year = 2027, title, printPrefix, keys, lastQuestion = 22 }) => ({
+].map(({ id, year = 2027, title, keys, lastQuestion = 22 }) => ({
   title,
   papers: keys.map((answers, i) => ({
     id: `${id}-${year}-${String(keys.length).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`,
-    title, year, volume: i + 1, printName: `${printPrefix}${keys.length}`, keys: [...answers], lastQuestion,
+    title, year, volume: i + 1, keys: [...answers], lastQuestion,
   })),
 }));
 const practicePapers = series.flatMap(item => item.papers);
@@ -30,7 +30,6 @@ const xiehou = {
   title: "邂逅遗憾模拟卷",
   year: 2027,
   volume: 1,
-  printName: "邂逅4",
   lastQuestion: 22,
 };
 const allPapers = [...practicePapers, xiehou];
@@ -203,14 +202,6 @@ function starredItems() {
   })));
 }
 
-function starredPrintLabel(paper, number) {
-  const digits = "零一二三四五六七八九";
-  const tens = Math.floor(number / 10);
-  const units = number % 10;
-  const ordinal = (tens > 1 ? digits[tens] : "") + (tens ? "十" : "") + (units ? digits[units] : "");
-  return `（${paper.printName}卷${paper.volume}第${ordinal}题）`;
-}
-
 function title(name, { back, tail = "", art = "", subtitle = "" } = {}) {
   return `<header class="page-head">
     <div class="breadcrumbs"><a href="#home">首页</a><span aria-hidden="true">/</span>${back ? `<a href="#${back.id}">${back.name}</a><span aria-hidden="true">/</span>` : ""}<span aria-current="page">${name}</span></div>
@@ -372,7 +363,7 @@ function lessonPage(route, lesson, number) {
 
 function starPage() {
   const items = starredItems();
-  const print = items.length ? action("打印标星题汇总", "print", "print", "primary") : "";
+  const print = items.length ? action("打印标星合集", "print", "print", "primary") : "";
   const lists = groups.map(group => {
     const matches = items.filter(item => item.type === group.id);
     if (!matches.length) return "";
@@ -620,13 +611,9 @@ document.addEventListener("click", event => {
       say("订正完成，已移出错题记录");
       break;
     }
-    case "print": {
-      const items = starredItems().map(({ paper, number, type, image }) => ({
-        number, type, image, label: starredPrintLabel(paper, number),
-      }));
-      if (!window.printStarred(items)) say("请允许此网站打开打印预览窗口");
+    case "print":
+      if (!window.printStarred(starredItems())) say("请允许此网站打开打印预览窗口");
       break;
-    }
   }
 });
 
