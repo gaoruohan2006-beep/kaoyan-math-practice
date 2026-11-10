@@ -1,0 +1,21 @@
+% !TEX program = xelatex
+
+\documentclass[zihao=5,fontset=windows,oneside]{exam-zh}
+
+\newcommand{\examtitletext}{2026年11月10日邂逅大班周测}
+\input{../setup.tex}
+
+\ifdefined\QuestionCrops
+  \examsetup{page/show-foot=false}
+  \renewcommand{\choiceheading}{}
+  \renewcommand{\fillheading}{}
+  \renewcommand{\solveheading}{}
+  \AddToHook{env/question/after}{\clearpage}
+\fi
+
+\begin{document}
+\ifdefined\QuestionCrops\else
+  \examcover
+\fi
+\input{paper.tex}
+\end{document}
