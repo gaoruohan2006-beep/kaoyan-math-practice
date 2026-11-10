@@ -25,14 +25,14 @@ const series = [
 }));
 const practicePapers = series.flatMap(item => item.papers);
 const defaultPaper = practicePapers[0];
-const xiehou = {
-  id: "xiehou-2027-01",
+const xiehouPapers = [1, 2].map(volume => ({
+  id: `xiehou-2027-${String(volume).padStart(2, "0")}`,
   title: "邂逅遗憾模拟卷",
   year: 2027,
-  volume: 1,
+  volume,
   lastQuestion: 22,
-};
-const allPapers = [...practicePapers, xiehou];
+}));
+const allPapers = [...practicePapers, ...xiehouPapers];
 const papersById = new Map(allPapers.map(paper => [paper.id, paper]));
 const groups = [
   { id: "choice", name: "选择题", first: 1, last: 10 },
@@ -139,7 +139,7 @@ function paperLabel(paper) {
 }
 
 function paperForMode(mode) {
-  return mode === "paper" ? xiehou : defaultPaper;
+  return mode === "paper" ? xiehouPapers[0] : defaultPaper;
 }
 
 function runPaper(run) {
@@ -152,7 +152,7 @@ function activeChoices(paper) {
 }
 
 function lessonHref(path, paper) {
-  return "#" + path + (paper === defaultPaper || paper === xiehou ? "" : "/" + paper.id);
+  return "#" + path + (paper === defaultPaper || paper === xiehouPapers[0] ? "" : "/" + paper.id);
 }
 
 function lessonAt(path) {
@@ -162,7 +162,7 @@ function lessonAt(path) {
   const lesson = routes[route];
   const paper = id ? papersById.get(id) : paperForMode(lesson.mode);
   const number = Number(rawNumber);
-  if (!paper || (lesson.mode === "paper") !== (paper === xiehou) ||
+  if (!paper || (lesson.mode === "paper") !== xiehouPapers.includes(paper) ||
       !Number.isInteger(number) || number > paper.lastQuestion ||
       !lesson.groups.some(group => number >= group.first && number <= group.last)) return null;
   return { ...lesson, route, paper, number };
@@ -239,7 +239,7 @@ function catalogRow(paper, controls) {
 }
 
 function catalog(section) {
-  const collections = section.id === "papers" ? [{ title: xiehou.title, papers: [xiehou] }] :
+  const collections = section.id === "papers" ? [{ title: xiehouPapers[0].title, papers: xiehouPapers }] :
     series.filter(collection => section.id !== "long" || collection.papers[0].lastQuestion > 16);
   const solutions = paper => pdf(paper, "solutions", "下载原版解析", true);
   const controls = paper => {
